@@ -42,6 +42,7 @@ runMavenShellScript () {
 # From notes at https://github.com/gravitee-io/release/issues/128#issuecomment-700120543
 # ---
 
+Info
 
 # ---
 # This plugin will edit the [pom.xml] to resetthe maven project version.
@@ -142,11 +143,8 @@ fi;
 
 
 
-Info
 
-echo "[DEBUG] Implementation of the maven release process not finished."
 
-exit 1
 
 
 
