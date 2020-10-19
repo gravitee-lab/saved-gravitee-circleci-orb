@@ -1,0 +1,22 @@
+description: >
+  Runs the commands to Release a Maven / Java Gravitee Component
+
+executor: cicdmachine
+
+parameters:
+  dry_run:
+    type: boolean
+    default: true
+    description: "Run in dry run mode?"
+  maven_version:
+    type: string
+    default: "3.6.3"
+    description: "What version of maven should be used?"
+steps:
+  - checkout
+  - secrethub/install
+  # - mvn_verify
+  # - mvn_build
+  - mvn_release:
+      dry_run: << parameters.dry_run >>
+      maven_version: << parameters.maven_version >>

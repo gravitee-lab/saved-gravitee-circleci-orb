@@ -1,0 +1,11 @@
+version: 2.1
+
+orbs:
+  secrethub: secrethub/cli@1.0.0
+
+description: >
+  The Circle CI Orb to use in all Gravitee Software Development Repos
+
+display:
+  home_url: "https://github.com/gravitee-io/gravitee-circleci-orb/tree/1.0.0#README.md"
+  source_url: "https://github.com/gravitee-io/gravitee-circleci-orb/tree/1.0.0"
