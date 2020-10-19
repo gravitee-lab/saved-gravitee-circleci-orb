@@ -1,0 +1,29 @@
+description: >
+  This example demonstrates how to use the "`greet`" `Orb` command, and especially how to
+  pass a value at runtime, to the `greet` `Orb` command, using `Orb` parameters :
+  * The first `greet` command call, will welcome "Paul", "Marc", and "Jean" in the "devops" Team
+  * The second `greet` command call, will welcome "Alexandre", "Yann", and "Laurie" in the "development" Team
+
+# Provide a use-case based example for using this orb.
+# Everything in the `usage` section will be displayed in the orb registry.
+# Comments are not retained.
+usage:
+  version: 2.1
+
+  orbs:
+    gravit33io-devorbs: orbinoid2/gravitee-dev-repos@0.0.5
+
+  jobs:
+    build:
+      docker:
+        - image: "circleci/node:latest"
+      steps:
+        - checkout
+        # Will welcome Paul, Marc, and Jean in the devops Team
+        - gravit33io-devorbs/greet:
+            greet_to: "Paul, Marc, Jean"
+            greet_team: "devops"
+        # Will welcome Alexandre, Yann, and Laurie in the development Team
+        - gravit33io-devorbs/greet:
+            greet_to: "Alexandre, Yann, Laurie"
+            greet_team: "development"

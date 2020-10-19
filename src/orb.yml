@@ -1,0 +1,653 @@
+version: 2.1
+description: |
+    The Circle CI Orb to use in all Gravitee Software Development Repos
+display:
+    home_url: https://github.com/gravitee-io/gravitee-circleci-orbinoid/tree/RELEASE_LOGIC/orb
+    source_url: https://github.com/gravitee-io/gravitee-circleci-orbinoid/releases/tag/RELEASE_LOGIC
+orbs:
+    secrethub: secrethub/cli@1.0.0
+commands:
+    greet:
+        description: |
+            This command is a demo use of Orbs command parameters. This command echoes a greeting message, using Orbs file inclusion. It uses : * the `greet_to` Orb command parameter, to set the names of the new team members to welcome. * the `greet_team` Orb command parameter, to set the name of the team the welcomed team members will be in.
+        parameters:
+            greet_team:
+                default: salesforce
+                description: Greeting in which Team?
+                enum:
+                    - development
+                    - support
+                    - devops
+                    - salesforce
+                type: enum
+            greet_to:
+                default: World of Orbs
+                description: Hello to whom?
+                type: string
+        steps:
+            - run:
+                command: |4
+
+                    export PARAM_TO=${PARAM_TO:-"this is the default value of the 'PARAM_TO' env. var., defined in the [$0] script."}
+                    export PARAM_TEAM=${PARAM_TEAM:-"this is the default value of the 'PARAM_TEAM' env. var., defined in the [$0] script."}
+
+
+                    Greet() {
+                        echo "Hello ${PARAM_TO} ! :)"
+                        echo "Welcome to the ${PARAM_TEAM} Team! "
+                    }
+
+                    # Will not run if sourced for bats-core tests.
+                    # View src/tests for more information.
+                    ORB_TEST_ENV="bats-core"
+                    if [ "${0#*$ORB_TEST_ENV}" == "$0" ]; then
+                        Greet
+                    fi
+                environment:
+                    PARAM_TEAM: <<parameters.greet_team>>
+                    PARAM_TO: <<parameters.greet_to>>
+                name: Hello Greeting
+    mvn_build:
+        description: |
+            This command runs the maven commands to build the Gravitee Component
+        parameters:
+            maven_version:
+                default: 3.6.3
+                description: What version ofmaven should be used?
+                type: string
+        steps:
+            - run:
+                command: |
+                    export DESIRED_MAVEN_VERSION=${DESIRED_MAVEN_VERSION:-'3.6.3'}
+                    export MVN_DOCKER="maven:${DESIRED_MAVEN_VERSION}-openjdk-16 "
+                    export MAVEN_COMMAND="mvn clean package"
+
+
+                    Info() {
+                      echo "Running [$0] with maven version [${DESIRED_MAVEN_VERSION}] "
+                      echo "Will Run Maven Command MAVEN_COMMAND=[${MAVEN_COMMAND}]"
+                    }
+
+                    Info
+                    docker run -it --rm -v "$PWD":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -w /usr/src/mymaven ${MVN_DOCKER} ${MAVEN_COMMAND}
+
+
+                    # Will not run if sourced for bats-core tests.
+                    # View src/tests for more information.
+                    ORB_TEST_ENV="bats-core"
+                    if [ "${0#*$ORB_TEST_ENV}" == "$0" ]; then
+                        Greet
+                    fi
+                environment:
+                    DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+                name: Maven Build
+    mvn_release:
+        description: |
+            This command runs the maven commands to release the Java Gravitee Component
+        parameters:
+            dry_run:
+                default: true
+                description: Run in dry run mode?
+                type: boolean
+            maven_version:
+                default: 3.6.3
+                description: What version ofmaven should be used?
+                type: string
+        steps:
+            - run:
+                command: |
+                    # export DRY_RUN=${DRY_RUN:-"true"}
+                    # so that there is no default value applied here : the
+                    # default value should be defined by the Circle CI Orb Logic ONLY.
+                    export DRY_RUN=${DRY_RUN}
+                    export DESIRED_MAVEN_VERSION=${DESIRED_MAVEN_VERSION:-'3.6.3'}
+                    export MVN_DOCKER="maven:${DESIRED_MAVEN_VERSION}-openjdk-16 "
+
+
+                    Info() {
+                      echo "Running [$0] with maven version [${DESIRED_MAVEN_VERSION}] "
+                      echo "Running [$0] in dry run Mode ? ${DRY_RUN} "
+                    }
+
+                    # --- --- --- --- --- --- --- #
+                    # ---   operational       --- #
+                    # ---   functions         --- #
+                    # --- --- --- --- --- --- --- #
+                    # ---
+                    #
+                    runMavenCommand () {
+                      export MAVEN_COMMAND=$1
+                      echo "[runMavenCommand] - Will Run Maven Command [${MAVEN_COMMAND}]"
+                      docker run -it --rm -v "$PWD":/usr/src/giomaven_project -v "$HOME/.m2":/root/.m2 -w /usr/src/giomaven_project ${MVN_DOCKER} ${MAVEN_COMMAND}
+                    }
+                    # ---
+                    # -  Runs a script inside the maven docker container
+                    # ---
+                    # this function takes one argument, the name of a file :
+                    # => which is a shell script to execute in the docker container
+                    # => which is expected to be located in [$PWD], to be picked up by the docker volume
+                    runMavenShellScript () {
+                      export MAVEN_SHELL_SCRIPT=$1
+                      echo "[runMavenShellScript] - Will Run Maven Shell Script [${MAVEN_SHELL_SCRIPT}]"
+                      # the ${MAVEN_SHELL_SCRIPT} shell script IS in the docker container, because of the docker volume to $PWD
+                      docker run -it --rm -v "$PWD":/usr/src/giomaven_project -v "$HOME/.m2":/root/.m2 -w /usr/src/giomaven_project ${MVN_DOCKER} ${MAVEN_SHELL_SCRIPT}
+                    }
+
+
+                    # --- --- --- --- --- --- --- #
+                    # ---   operations start  --- #
+                    # --- --- --- --- --- --- --- #
+                    # From notes at https://github.com/gravitee-io/release/issues/128#issuecomment-700120543
+                    # ---
+
+
+                    # ---
+                    # This plugin will edit the [pom.xml] to resetthe maven project version.
+                    # The purpose here, is to "get rid of the [-SNAPSHOT] suffix comming
+                    # from the release.json"
+                    # ---
+                    # Example :
+                    # --> the [pom.xml] has version [1.3.1-SNAPSHOT], so we run :
+                    # mvn -B versions:set -DnewVersion=1.3.1 -DgenerateBackupPoms=false
+                    # ---
+                    # To do that, we need the version of the maven project. That's a few commands to run. SO we need to run that as a script.
+                    # --> So we create a shell script with the required commands, and then run the script with the [runMavenShellScript] function
+                    # --> Note that Circle CI Orbs file inclusion works with only Onefile, that's why we HAVE to generate it "on the fly"
+                    if [ -f ./mvn.script.sh ]; then
+                      rm ./mvn.script.sh
+                    fi;
+                    # --- model is [mvn_release_trim_snapshot.sh]
+                    # 1./ Ok,so first, need to pick up the maven project version from [pom.xml], using the maven exec plugin
+                    echo "export MVN_PRJ_VERSION=\$(mvn -Dexec.executable='echo' -Dexec.args='\${project.version}' --non-recursive exec:exec -q)" | tee -a ./mvn.script.sh
+                    echo "echo \"Resolved Maven Project version : [\${MVN_PRJ_VERSION}]\"" | tee -a ./mvn.script.sh
+                    # But MVN_PRJ_VERSION has the '-SNAPSHOT' suffix, we need to strip it off, to pass that exact verion to maven version plugin
+                    echo "export MVN_PRJ_VERSION=\$(echo \"\${MVN_PRJ_VERSION}\" | awk -F '-SNAPSHOT' '{print \$1}')" | tee -a ./mvn.script.sh
+                    echo "echo \"trimmed from-SNAPSHOT Maven Project version : [\${MVN_PRJ_VERSION}]\"" | tee -a ./mvn.script.sh
+                    # So we can retrieve the project version out of container
+                    echo "echo \"\${MVN_PRJ_VERSION}\" > ./gio.maven.project.version" | tee -a ./mvn.script.sh
+                    # 2../ and then we can run the [mvn -B versions:set -DnewVersion=1.3.1 -DgenerateBackupPoms=false]
+                    echo "mvn -B versions:set -DnewVersion=\${MVN_PRJ_VERSION} -DgenerateBackupPoms=false" | tee -a ./mvn.script.sh
+                    # finally let's make it executable, before passing it to the [runMavenShellScript] function
+                    chmod +x ./mvn.script.sh
+                    runMavenShellScript ./mvn.script.sh
+
+                    export MVN_PRJ_VERSION=$(cat ./gio.maven.project.version)
+                    export MVN_PRJ_VERSION_PATCH=$(cat ./gio.maven.project.version | awk -F '.' '{print $3}')
+
+                    echo "MVN_PRJ_VERSION=[${MVN_PRJ_VERSION}]"
+                    echo "MVN_PRJ_VERSION_PATCH=[${MVN_PRJ_VERSION_PATCH}]"
+
+                    # ---
+                    # the command to update dependencies
+                    export MVN_UPDATER_CMD="mvn -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false"
+                    echo "${MVN_UPDATER_CMD}" > ./mvn.script2.sh
+                    chmod +x ./mvn.script2.sh
+
+                    # ---
+                    # If The maven project version, ends with '.0', then
+                    # this is a maintainance release
+                    if [ "${MVN_PRJ_VERSION_PATCH}" == "0" ]; then
+                      # yes it is a maintainance version
+                      runMavenShellScript ./mvn.script2.sh
+                    else
+                      # no it is not a maintainance version
+                      runMavenShellScript ./mvn.script2.sh
+                    fi;
+
+
+                    # --- --- --- --- --- --- --- #
+                    # ---  FINAL MVN DEPLOY   --- #
+                    # --- --- --- --- --- --- --- #
+                    export MVN_UPDATER_CMD="mvn -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false"
+                    echo "${MVN_UPDATER_CMD}" > ./mvn.script2.sh
+
+
+                    export MVN_COMMAND="mvn clean"
+
+                    # ---------------------------------------
+                    # is it a dry run
+                    # ---------------------------------------
+                    echo "# ---------------------------------------"
+                    echo " IS IT A DRY RUN ? [DRY_RUN=[${DRY_RUN}]] "
+                    echo "# ---------------------------------------"
+                    # Ok, that's just the way it is is Circle CI types (inverted from C LANGUAGE AND ALL UNIX CONVENTIONS : ZERO IS FALSE, ONE IS TRUE....)
+                    if [ "${DRY_RUN}" == "1" ]; then
+                      # --->>> YES IT IS A DRY RUN
+                      echo "# --->>> YES IT IS A DRY RUN"
+                      echo "Release Dry Mode is ON"
+                      export MVN_COMMAND="mvn -B -U clean install"
+                      echo "${MVN_COMMAND}" > ./mvn.script3.sh
+                      export MVN_COMMAND="mvn enforcer:enforce"
+                      echo "${MVN_COMMAND}" >> ./mvn.script3.sh
+                      chmod +x ./mvn.script3.sh
+                      runMavenShellScript ./mvn.script3.sh
+                    else
+                      if [ "${DRY_RUN}" == "0" ]; then
+                        # --->>> NO IT IS NOT A DRY RUN
+                        echo "# --->>> NO IT IS NOT A DRY RUN"
+                        export MVN_COMMAND="mvn -B -U -P gravitee-release clean deploy"
+                        echo "${MVN_COMMAND}" > ./mvn.script4.sh
+                        chmod +x ./mvn.script4.sh
+                        runMavenShellScript ./mvn.script4.sh
+                      else
+                        echo "Error : received [DRY_RUN=[${DRY_RUN}]] value, while Circle CI shoudl have transmitted either ZERO for false, or ONE, for false"
+                        exit 3
+                      fi;
+                    fi;
+
+
+
+
+
+
+                    Info
+
+                    echo "[DEBUG] Implementation of the maven release process not finished."
+
+                    exit 1
+
+
+
+
+                    exit 0
+                    # ---
+                    # Below, notes I took while being explained what the former Jenkins Scripts did.
+                    # ---
+                    # 1.3.1-SNAPSHOT -> to 1.3.1
+                    mvn -B versions:set -DnewVersion=1.3.1 -DgenerateBackupPoms=false
+
+                    # detection si c'est une version de maintenance (un patch, ou une nouvelle feature/un breaking change) :
+                    # les versions qui terminent par '.0' ne sont pas de maintenance sinon c'est une version de maintenance
+
+
+                    # donc l'enjeu ci dessous est que si c'est une version de maintenance ou pas, on pourra
+                    # vouloir une politique différente :
+                    # soit on autorise l'upgrade automatique des versions majeures mineures
+                    # soit on ne l'autorise pas : notre politique n'est pas complètement fixe de ce côté
+                    # il y a des cas où l'on souhaite l'update automatique
+
+                                        if (c.version.isMaintenance()) { # keep detection of is maintainance or not : maybe we want different
+                                            mvn -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+                                        } else {
+                                            mvn -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+                                        }
+
+                    # enfin, on veux faire le mvn clean install en insérant le git commit id pour le BUILD NUMBER
+
+                                        withEnv(["GIT_COMMIT=${git_commit}"]) {
+                                            // deploy
+                                            if (dryRun) {
+                                                sh "mvn -B -U clean install"
+                                                sh "mvn enforcer:enforce"
+                                            } else {
+                                                sh "mvn -B -U -P gravitee-release clean deploy"
+                                            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    # --- Cirlcle CI Team BATS Framework Filter
+                    # (So BATS Can run its test suite, though they are not that valuable in
+                    # my opinion. BATS is like Unit Tests, but for Shell Scripts.)
+                    # ---
+                    # Will not run if sourced for bats-core tests.
+                    # View src/tests for more information.
+                    ORB_TEST_ENV="bats-core"
+                    if [ "${0#*$ORB_TEST_ENV}" == "$0" ]; then
+                        Greet
+                    fi
+                environment:
+                    DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+                    DRY_RUN: <<parameters.dry_run>>
+                name: Maven Release
+    mvn_verify:
+        description: |
+            This command runs the maven clean verify goals, as pre-flight checks for the Gravitee Component
+        parameters:
+            maven_version:
+                default: 3.6.3
+                description: What version ofmaven should be used?
+                type: string
+        steps:
+            - run:
+                command: |4
+
+                    export DESIRED_MAVEN_VERSION=${DESIRED_MAVEN_VERSION:-'3.6.3'}
+                    export MVN_DOCKER="maven:${DESIRED_MAVEN_VERSION}-openjdk-16 "
+                    export MAVEN_COMMAND="mvn clean verify"
+
+
+                    Info() {
+                      echo "Running [$0] with maven version [${DESIRED_MAVEN_VERSION}] "
+                      echo "Will Run Maven Command MAVEN_COMMAND=[${MAVEN_COMMAND}]"
+                    }
+
+                    Info
+                    docker run -it --rm -v "$PWD":/usr/src/mymaven -v "$HOME/.m2":/root/.m2 -w /usr/src/mymaven ${MVN_DOCKER} ${MAVEN_COMMAND}
+
+
+                    # Will not run if sourced for bats-core tests.
+                    # View src/tests for more information.
+                    ORB_TEST_ENV="bats-core"
+                    if [ "${0#*$ORB_TEST_ENV}" == "$0" ]; then
+                        Greet
+                    fi
+                environment:
+                    DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+                name: Maven Verify
+    pull_requests_bot:
+        description: |
+            This command runs the Gravitee CI CD Orchestrator Pull Request Bot. This bot routes pull request to a different Circle CI workflow, based on git branch names, e.g. :
+              * if prefix is `issues-`, or `feature-` then one workflow, designed for dev team work flow
+              * if prefix is `support-`, then another workflow, designed for support team work flow
+              * etc ...
+        steps:
+            - run:
+                command: |
+                    echo "This job will run the pull request bot, in its docker image "
+                    echo " ---"
+                    echo "Here are the values of the Circle CI Pipeline Parameters : "
+                    echo " ---"
+                    echo "PIPELINE_PARAM_GIO_ACTION=[${PIPELINE_PARAM_GIO_ACTION}] "
+                    echo "PIPELINE_PARAM_PR_BOT_IMAGE_TAG=[${PIPELINE_PARAM_PR_BOT_IMAGE_TAG}] "
+                    echo "PIPELINE_PARAM_IS_TRIGGERED_FROM_PR=[${PIPELINE_PARAM_IS_TRIGGERED_FROM_PR}]"
+                    echo " ---"
+                    echo "Here are the values of the Circle CI pull requests related native env. var. : "
+                    echo " ---"
+                    echo "CIRCLE_PULL_REQUEST=[${CIRCLE_PULL_REQUEST}] "
+                    echo "CIRCLE_PULL_REQUESTS=[${CIRCLE_PULL_REQUESTS}] "
+                    echo "Those env.var. are not set empty (do not know why yet: are they set only on Pull request creation events ?)"
+                    echo "CIRCLE_PR_NUMBER=[${CIRCLE_PR_NUMBER}] "
+                    echo "CIRCLE_PR_REPONAME=[${CIRCLE_PR_REPONAME}] "
+                    echo "CIRCLE_PR_USERNAME=[${CIRCLE_PR_USERNAME}] "
+                    echo " ---"
+                    echo "Here are the values infered from Circle CI env. var., releated to the checked out git branch, and the last commit that branch : "
+                    echo " ---"
+                    echo "CHECKED OUT GIT BRANCH IS : [${CIRCLE_BRANCH}] "
+                    echo "LAST COMMIT ON THIS BRANCH IS : [$(git rev-parse ${CIRCLE_BRANCH})] "
+                    echo "Circle CI [CIRCLE_SHA1] value is [${CIRCLE_SHA1}]"
+                    echo " ---"
+                    docker pull quay.io/gravitee-lab/cicd-orchestrator:stable-latest
+                    # checking docker image pulled in previous step is there
+                    docker images
+                    # --> .secrets.json is used by Gravitee CI CD Orchestrator to authenticate to Circle CI
+                    CCI_SECRET_FILE=$PWD/.secrets.json
+                    secrethub read --out-file ${CCI_SECRET_FILE} gravitee-lab/cicd-orchestrator/dev/cci/botuser/.secret.json
+                    ls -allh ${CCI_SECRET_FILE}
+                    # Docker volumes to map pipeline checked out git tree, .env file and .secrets.json files inside the docker container
+                    # export DOCKER_VOLUMES="-v $PWD:/graviteeio/cicd/pipeline -v $PWD/.secrets.json:/graviteeio/cicd/.secrets.json"
+                    export DOCKER_VOLUMES="-v $PWD:/graviteeio/cicd/pipeline -v $PWD/.secrets.json:/graviteeio/cicd/.secrets.json"
+                    docker run --name orchestrator ${DOCKER_VOLUMES} --restart no -it quay.io/gravitee-lab/cicd-orchestrator:stable-latest -s pull_req --dry-run false
+                name: Running the Pull Request Bot
+executors:
+    cicdmachine:
+        description: |
+            This is a sample executor using Machine executor.
+        machine:
+            image: <<parameters.os_name>>-<<parameters.os_version>>:<<parameters.os_patch>>
+            resource_class: <<parameters.machine_size>>
+        parameters:
+            machine_size:
+                default: medium
+                description: |
+                    Pick a specific machine size: https://hub.docker.com/r/cimg/node/tags
+                type: string
+            os_name:
+                default: ubuntu
+                description: |
+                    Pick a specific os version image variant: https://hub.docker.com/r/cimg/node/tags
+                type: string
+            os_patch:
+                default: 201903-01
+                description: |
+                    Pick a specific os patch version number image variant: https://hub.docker.com/r/cimg/node/tags
+                type: string
+            os_version:
+                default: "1604"
+                description: |
+                    Pick a specific os version (major+minor) number image variant: https://hub.docker.com/r/cimg/node/tags
+                type: string
+    default:
+        description: |
+            This is a sample executor using Docker and Node.
+        docker:
+            - image: cimg/node:<<parameters.tag>>
+        parameters:
+            tag:
+                default: lts
+                description: |
+                    Pick a specific circleci/node image variant: https://hub.docker.com/r/cimg/node/tags
+                type: string
+jobs:
+    hello-job:
+        description: |
+            Sample description
+        executor: default
+        parameters:
+            greet_team:
+                default: development
+                description: Greeting in which Team? (hello job)
+                enum:
+                    - development
+                    - support
+                    - devops
+                    - salesforce
+                type: enum
+            greet_to:
+                default: Titouan, David, Nicolas, Azize
+                description: Hello to whom? (job)
+                type: string
+        steps:
+            - greet:
+                greet_team: << parameters.greet_team>>
+                greet_to: << parameters.greet_to>>
+    nodejs-job:
+        description: |
+            Sample description
+        executor: default
+        parameters:
+            greet_team:
+                default: development
+                description: Greeting in which Team? (hello job)
+                enum:
+                    - development
+                    - support
+                    - devops
+                    - salesforce
+                type: enum
+            greet_to:
+                default: Titouan, David, Nicolas, Azize
+                description: Hello to whom? (job)
+                type: string
+        steps:
+            - greet:
+                greet_team: << parameters.greet_team >>
+                greet_to: << parameters.greet_to >>
+            - checkout
+            - run:
+                command: npm ci
+                name: install
+            - run:
+                command: npm run validate
+                name: validate
+            - run:
+                command: echo installing semantic-release && npx -p semantic-release@15 -c 'echo running semantic-release && semantic-release'
+                name: release
+    pull-requests-bot:
+        description: |
+            Runs the Gravitee CI CD ORchestrator Pull Requests Bot. This bot routes pull request to a different Circle CI workflow, based on git branch names, e.g. :
+              * if prefix is `issues-`, or `feature-` then one workflow, designed for dev team work flow
+              * if prefix is `support-`, then another workflow, designed for support team work flow
+              * etc ...
+        executor: cicdmachine
+        steps:
+            - checkout
+            - secrethub/install
+            - pull_requests_bot
+    release:
+        description: |
+            Runs the commands to Release a Maven / Java Gravitee Component
+        executor: cicdmachine
+        parameters:
+            dry_run:
+                default: true
+                description: Run in dry run mode?
+                type: boolean
+            maven_version:
+                default: 3.6.3
+                description: What version of maven should be used?
+                type: string
+        steps:
+            - checkout
+            - secrethub/install
+            - mvn_release:
+                dry_run: << parameters.dry_run >>
+                maven_version: << parameters.maven_version >>
+examples:
+    example-template:
+        description: |
+            Sample example description.
+        usage:
+            version: "2.1"
+            orbs:
+                <orb-name>: <namespace>/<orb-name>@1.2.3
+            workflows:
+                use-my-orb:
+                    jobs:
+                        - <orb-name>/<job-name>
+    full-example:
+        description: |
+            This Full example demonstrates how to use : * The "`hello-job`" and "`nodejs-job`" `Orb` job, * along with an "oldschool"-defined job, invoked via the "`wflow_with_old_sch00l_job`" workflow
+            The "oldschool"-defined job example demonstrates how to use the "`greet`" `Orb` command, and especially how to pass a value at runtime, to the `greet` `Orb` command, using `Orb` parameters : * The first `greet` command call, will welcome "Gravitee Mates" in the default Team * The second `greet` command call, will welcome "Paul", "Marc", and "Jean" in the "devops" Team * The Third `greet` command call, will welcome "Alexandre", "Yann", and "Laurie" in the "development" Team
+        usage:
+            version: "2.1"
+            orbs:
+                gravit33io-devorbs: orbinoid2/gravitee-dev-repos@0.0.5
+            jobs:
+                oldschool:
+                    docker:
+                        - image: circleci/node:latest
+                    steps:
+                        - checkout
+                        - gravit33io-devorbs/greet:
+                            greet_to: Gravitee Mates
+                        - gravit33io-devorbs/greet:
+                            greet_team: devops
+                            greet_to: Paul, Marc, Jean
+                        - gravit33io-devorbs/greet:
+                            greet_team: development
+                            greet_to: Alexandre, Yann, Laurie
+                        - run:
+                            command: npm ci
+                            name: install
+                        - run:
+                            command: npm run validate
+                            name: validate
+                        - run:
+                            command: echo installing semantic-release && npx -p semantic-release@15 -c 'echo running semantic-release && semantic-release'
+                            name: release
+            workflows:
+                hell0_n0dejs_wfl0w:
+                    jobs:
+                        - gravit33io-devorbs/nodejs-job:
+                            context: cicd-orchestrator
+                            greet_team: salesforce
+                            greet_to: Titouan, Paul, Nicolas, Azize, David, Florent, Laurie, Rory
+                hell0_workfl0w:
+                    jobs:
+                        - gravit33io-devorbs/hello-job:
+                            context: yourcontext
+                            greet_team: salesforce
+                            greet_to: Titouan, Paul, Nicolas, Azize, David, Florent, Laurie, Rory
+                version: 2.1
+                wflow_with_old_sch00l_job:
+                    jobs:
+                        - oldschool:
+                            context: cicd-orchestrator
+    greet-command-example:
+        description: |
+            This example demonstrates how to use the "`greet`" `Orb` command, and especially how to pass a value at runtime, to the `greet` `Orb` command, using `Orb` parameters : * The first `greet` command call, will welcome "Paul", "Marc", and "Jean" in the "devops" Team * The second `greet` command call, will welcome "Alexandre", "Yann", and "Laurie" in the "development" Team
+        usage:
+            version: "2.1"
+            orbs:
+                gravit33io-devorbs: orbinoid2/gravitee-dev-repos@0.0.5
+            jobs:
+                build:
+                    docker:
+                        - image: circleci/node:latest
+                    steps:
+                        - checkout
+                        - gravit33io-devorbs/greet:
+                            greet_team: devops
+                            greet_to: Paul, Marc, Jean
+                        - gravit33io-devorbs/greet:
+                            greet_team: development
+                            greet_to: Alexandre, Yann, Laurie
+            workflows: null
+    nodejs-job-example:
+        description: |
+            This example demonstrates how to use the "`hello-job`" `Orb` job, along with an "oldschool"-defined job
+            The "oldschool"-defined job example demonstrates how to use the "`greet`" `Orb` command, and especially how to pass a value at runtime, to the `greet` `Orb` command, using `Orb` parameters : * The first `greet` command call, will welcome "Gravitee Mates" in the default Team * The second `greet` command call, will welcome "Paul", "Marc", and "Jean" in the "devops" Team * The Third `greet` command call, will welcome "Alexandre", "Yann", and "Laurie" in the "development" Team
+        usage:
+            version: "2.1"
+            orbs:
+                gravit33io-devorbs: orbinoid2/gravitee-dev-repos@0.0.5
+            workflows:
+                hell0_n0dejs_wfl0w:
+                    jobs:
+                        - gravit33io-devorbs/nodejs-job:
+                            context: cicd-orchestrator
+                            greet_team: salesforce
+                            greet_to: Titouan, Paul, Nicolas, Azize, David, Florent, Laurie, Rory
+                version: 2.1
+    pull-requests-bot-example:
+        description: |
+            This example demonstrates how to use the "`pull-requests-bot`" along with the "`release`" `Orb` job, in a Gravitee.io Software Developement repo's Pipeline
+        usage:
+            version: "2.1"
+            orbs:
+                gravitee: orbinoid2/gravitee@0.0.1
+            workflows:
+                pr_bot:
+                    jobs:
+                        - gravitee/pull-requests-bot
+                release:
+                    jobs:
+                        - gravitee/release:
+                            dry-run: << pipeline.parameters.dry_run >>
+                            maven_version: 3.6.3
+                    when:
+                        equal:
+                            - product_release
+                            - << pipeline.parameters.gio_action >>
+                version: 2.1
+    release-example:
+        description: |
+            This example demonstrates how to use the "`release`" `Orb` job, in a Gravitee.io Software Developement repo's Pipeline
+        usage:
+            version: "2.1"
+            orbs:
+                gravitee: orbinoid2/gravitee@0.0.1
+            workflows:
+                release:
+                    jobs:
+                        - gravitee/release:
+                            dry_run: << pipeline.parameters.dry_run >>
+                            maven_version: 3.6.3
+                    when:
+                        equal:
+                            - product_release
+                            - << pipeline.parameters.gio_action >>
+                version: 2.1
+

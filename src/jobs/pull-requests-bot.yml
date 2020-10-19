@@ -1,0 +1,15 @@
+description: >
+  Runs the Gravitee CI CD ORchestrator Pull Requests Bot.
+  This bot routes pull request to a different Circle CI workflow, based on git branch names, e.g. :
+    * if prefix is `issues-`, or `feature-` then one workflow, designed for dev team work flow
+    * if prefix is `support-`, then another workflow, designed for support team work flow
+    * etc ...
+# What will this job do?
+# Descriptions should be short, simple, and clear.
+
+executor: cicdmachine
+
+steps:
+  - checkout
+  - secrethub/install
+  - pull_requests_bot

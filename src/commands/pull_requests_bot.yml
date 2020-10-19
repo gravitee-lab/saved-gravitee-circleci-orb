@@ -1,0 +1,13 @@
+description: >
+    This command runs the Gravitee CI CD Orchestrator Pull Request Bot.
+    This bot routes pull request to a different Circle CI workflow, based on git branch names, e.g. :
+      * if prefix is `issues-`, or `feature-` then one workflow, designed for dev team work flow
+      * if prefix is `support-`, then another workflow, designed for support team work flow
+      * etc ...
+
+# What will this command do?
+# Descriptions should be short, simple, and clear.
+steps:
+  - run:
+      name: "Running the Pull Request Bot"
+      command: <<include(scripts/pr_bot.sh)>>
