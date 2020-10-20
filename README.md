@@ -101,35 +101,131 @@ Below, `x`,  `y`, `z`, and `w`, are all integers between `0` and `9999`
 The match between orbs releases in Orb Registry, and Orb source code git releases, will be the following :
 * to prepare any `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, we will release a many `@dev:` -prefixed as neccesary :
   * `@dev:` -prefixed releases to prepare `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will be version numbered :
-    * `gravitee-io/gravitee@dev:x.y.z.0`,
-    * `gravitee-io/gravitee@dev:x.y.z.1`,
-    * `gravitee-io/gravitee@dev:x.y.z.2`,
+    * `gravitee-io/gravitee@dev:x.y.z-0`,
+    * `gravitee-io/gravitee@dev:x.y.z-1`,
+    * `gravitee-io/gravitee@dev:x.y.z-2`,
     * etc...
-    * `gravitee-io/gravitee@dev:x.y.z.9999`
+    * `gravitee-io/gravitee@dev:x.y.z-9999`
   * Hopefuly, we will be able to successfully prepare any release, with less thant ten thousand intermediary "_dev_" releases.
 * And :
   * any `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
-  * any `gravitee-io/gravitee@dev:x.y.z.${ALPHA}` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
+  * any `gravitee-io/gravitee@dev:x.y.z-${ALPHA}` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
 
 And generalized to any Circle CI `Orb` :
 
 * to prepare any `${ORB_NAMESPACE}/${ORB_NAME}@x.y.z` release in `Orb` Registry, we will release a many `@dev:` -prefixed as neccesary :
   * `@dev:` -prefixed releases to prepare `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will be version numbered :
-    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z.0`,
-    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z.1`,
-    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z.2`,
+    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z-0`,
+    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z-1`,
+    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z-2`,
     * etc...
-    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z.9999`
+    * `${ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z-9999`
   * Hopefuly, we will be able to successfully prepare any release, with less than ten thousand intermediary "_dev_" releases.
 * And :
-  * any `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
-  * any `gravitee-io/gravitee@dev:x.y.z.w` release in `Orb` Registry, will be matched to the `dev-x.y.z.w` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
+  * any `{ORB_NAMESPACE}/${ORB_NAME}@x.y.z` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
+  * any `{ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z-w` release in `Orb` Registry, will be matched to the `dev-x.y.z-w` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
 
 With this convention, it is always clear, and obvious :
 * which version, is "before" any other
 * how versions arematched, between git repositories versioning ORbs source code, nd orb Registry versions.
 
 And makes the Gravitee CI CD a `Gitops`-compliant infrastructure, managed as code. ("Infra As Code")
+
+Also so mcuh easier to everyday manage, "without having tothink about it, just follow git".
+
+### The funny problem with `npm`
+
+I'll explain nowa a funny issue, meaningful, which happened to be raised due to Circle CI `dev:` prefix Orb versioning "parallel world", and how I quickly fixed it.
+
+Orbinoid works that way :
+* it picks up the orb version number to publish, from `package.json`
+* to publish orb `dev:0.0.1.0`, i therefore set to that version number, the `version` in `package.json`
+* and then I had this erro, when I ran `npm start -- -p`, to publish the `gravitee-io/gravitee@dev:0.0.1.0` orb  :
+```bash
+$ npm run dev
+npm ERR! Invalid version: "dev:0.0.1.0"
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/jibl/.npm/_logs/2020-10-20T12_10_09_900Z-debug.log
+```
+
+I fixed that issue quickly very simply :
+* added another GNU option `-dp` so that :
+  * in `package.json` `version: ${VERSION}`
+  * `npm start -- -d ` : will publish orb version with `dev:` prefix
+  * `npm start -- -p ` : will publish orb version without `dev:` prefix
+
+
+### And the "_non-immutability_" of the "`dev` versioning world"
+
+Finally, I immediately wanted to test something : are "`dev` world versions", immutable, just like their real world pairs ?
+
+Well it appeared thatthe answer is no !
+
+Andthat makes sense :
+* to prepare any orb release, just like I experienced, anyone needs to publish an orb version,
+* and to publish that Orb version, many times, with a modification every time (until)
+* to publish to orb is necessary, us to be able to test it, inside a "real pipeline", meaning in a `.circleci/.config.yml`
+
+This fact is confirmed by the stdout of the Circle CI CLI :
+
+* which makes sense :it is made for testing, not stable
+
+<pre>
+ === Publishing Circle CI Orb [gravitee-io/gravitee@dev:0.0.1-0] to remote Orb registry
+Orb `gravitee-io/gravitee@dev:0.0.1-0` was published.
+Please note that this is an open orb and is world-readable.
+Note that your dev label `dev:0.0.1-0` can be overwritten by anyone in your organization.
+Your dev orb will expire in 90 days unless a new version is published on the label `dev:0.0.1-0`.
+Successfully Published Circle CI Orb [gravitee-io/gravitee@dev:0.0.1-0] in remote Orb registry
+Visit Published Circle CI Orb 's Homepage at https://circleci.com/developer/orbs/orb/gravitee-io/gravitee [dev:0.0.1-0] in Orb registry
+</pre>
+
+Note that the published "dev" orb :
+* is made available by the Circle CI Orb Registry
+* but not visible on the Orb Registry Web UI (not available to others users
+
+Excellent, this makes possible defining a **simplified** Gitops compliant Versioning Policy for Orbs :
+
+
+
+## The Simplified, Gitops compliant, Versioning Policy
+
+Below, `x`,  `y`, `z`, and `w`, are all integers between `0` and `9999`
+
+The match between orbs releases in Orb Registry, and Orb source code git releases, will be the following :
+* to prepare any `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, we will release a many `@dev:` -prefixed as neccesary :
+  * `@dev:` -prefixed releases to prepare `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will all be version numbered `gravitee-io/gravitee@dev:x.y.z`,
+  * and everytime we need to bring a new modification, we just publish the modified Orb with the same `@dev:x.y.z` version number, overwrtting the previously published one.
+  * And we always will be able to successfully prepare any release, with as many updated/overwritten "_dev_" releases as neccessary.
+* On the `git` side :
+  * any `gravitee-io/gravitee@x.y.z` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
+  * any `gravitee-io/gravitee@dev:x.y.z` dev release in `Orb` Registry, will :
+    *  never be matched to any `git` release,
+    * but be matched to the commit tagged `dev-x.y.z`, on the git branch on wich the devops is working.
+    * Everytime he publishes a modified `gravitee-io/gravitee@dev:x.y.z` dev release in `Orb` Registry, the `dev-x.y.z` tag will move forward : the previous `dev-x.y.z` tag will be removed, and created again, on the new `git` commit.
+
+And generalized to any Circle CI `Orb` :
+
+* to prepare any `{ORB_NAMESPACE}/${ORB_NAME}@x.y.z` release in `Orb` Registry, we will release a many `@dev:` -prefixed as neccesary :
+  * `@dev:` -prefixed releases to prepare `{ORB_NAMESPACE}/${ORB_NAME}@x.y.z` release in `Orb` Registry, will all be version numbered `{ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z`,
+  * and everytime we need to bring a new modification, we just publish the modified Orb with the same `@dev:x.y.z` version number, overwrtting the previously published one.
+  * And we always will be able to successfully prepare any release, with as many updated/overwritten "_`dev`_" releases as neccessary.
+* On the `git` side :
+  * any `{ORB_NAMESPACE}/${ORB_NAME}@x.y.z` release in `Orb` Registry, will be matched to the `x.y.z` git release, in the git repo versioning the source code of the Circle CI Orb [https://github.com/gravitee-io/gravitee-circleci-orb]
+  * any `{ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z` dev release in `Orb` Registry, will :
+    * never be matched to any `git` release,
+    * but be matched to the commit tagged `dev-x.y.z`, on the git branch on wich the devops is working.
+    * Everytime he publishes a modified `{ORB_NAMESPACE}/${ORB_NAME}@dev:x.y.z` dev release in `Orb` Registry, the `dev-x.y.z` tag will move forward : the previous `dev-x.y.z` tag will be removed, and created again, on the new `git` commit.
+
+
+With this convention, it is always clear, and obvious :
+* which version, is "before" any other
+* how versions are matched, between git repositories versioning Orbs source code, and orb Registry versions.
+
+And makes the Gravitee CI CD a `Gitops`-compliant infrastructure, managed as code. ("Infra As Code")
+
+And simplified.
 
 Also so mcuh easier to everyday manage, "without having tothink about it, just follow git".
 
