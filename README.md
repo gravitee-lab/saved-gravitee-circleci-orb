@@ -1,5 +1,8 @@
 # The Gravitee Circle CI `Orb`
 
+_(This versio of the Orb, is a kept aside version, just to keepa few utilites we might wnat to quickly checkout n reuse)_
+_(keeping a few utilities aside, from the orb source code init, before cleaning code up for first release [`1.0.0`], matching published [`gravitee-io/gravitee@dev:1.0.0`])_
+
 This repo versions the source code of the first Circle CI `Orb`, in the Gravitee.io CI CD system.
 
 The Circle CI pipeline defintion for any git repo is done using a yaml file, in that git repo, of path `.circleci/config.yml`.
