@@ -1,7 +1,6 @@
 description: >
     This command runs the maven commands to release the Java Gravitee Component
-# What will this command do?
-# Descriptions should be short, simple, and clear.
+
 parameters:
   dry_run:
     type: boolean

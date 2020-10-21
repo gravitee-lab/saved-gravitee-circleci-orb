@@ -1,7 +1,5 @@
 description: >
     This command runs the maven clean verify goals, as pre-flight checks for the Gravitee Component
-# What will this command do?
-# Descriptions should be short, simple, and clear.
 
 parameters:
   maven_version:

@@ -1,5 +1,5 @@
 description: >
-  This example demonstrates how to use the "`release`" `Orb` job, in a Gravitee.io Software Developement repo's Pipeline
+  This example demonstrates how to use the "`pr-build`" along with the "`release`" `Orb` job, in a Gravitee.io Software Developement repo's Pipeline
 
 usage:
   version: 2.1

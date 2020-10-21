@@ -1,7 +1,5 @@
 description: >
   Runs the commands to Release a Maven / Java Gravitee Component
-# What will this job do?
-# Descriptions should be short, simple, and clear.
 
 executor: cicdmachine
 

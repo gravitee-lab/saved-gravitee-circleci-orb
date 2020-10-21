@@ -1,7 +1,6 @@
 description: >
     This command runs the maven commands to build the Gravitee Component
-# What will this command do?
-# Descriptions should be short, simple, and clear.
+
 parameters:
   maven_version:
     type: string

@@ -4,12 +4,10 @@ description: >
     * if prefix is `issues-`, or `feature-` then one workflow, designed for dev team work flow
     * if prefix is `support-`, then another workflow, designed for support team work flow
     * etc ...
-# What will this job do?
-# Descriptions should be short, simple, and clear.
 
 executor: cicdmachine
 
 steps:
   - checkout
   - secrethub/install
-  - pull_requests_bot
+  - mvn_verify

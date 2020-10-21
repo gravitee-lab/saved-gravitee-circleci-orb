@@ -131,7 +131,15 @@ With this convention, it is always clear, and obvious :
 
 And makes the Gravitee CI CD a `Gitops`-compliant infrastructure, managed as code. ("Infra As Code")
 
-Also so mcuh easier to everyday manage, "without having tothink about it, just follow git".
+Also so mcuh easier to everyday manage, "without having to think about it, just follow git".
+
+_Note : _
+
+This part has to be worked on again, especially to fully demonstrate how a team collaboration can be managed on a Circle CI `Orb`.
+
+Now, for that future work, here is a very important real life example, of the versioning policy used by the Circle CI Team itself :
+
+![Circle CI Team versioning policy for Orbs](documentation/images/circleci-team-practices-about-orbs-versioning-policy.png)
 
 ### The funny problem with `npm`
 
@@ -227,7 +235,7 @@ And makes the Gravitee CI CD a `Gitops`-compliant infrastructure, managed as cod
 
 And simplified.
 
-Also so mcuh easier to everyday manage, "without having tothink about it, just follow git".
+Also so mcuh easier to everyday manage, "without having to think about it, just follow git".
 
 
 
