@@ -1,0 +1,19 @@
+description: >
+    This command runs the maven commands to release the Java Gravitee Component
+
+parameters:
+  dry_run:
+    type: boolean
+    default: true
+    description: "Run in dry run mode?"
+  maven_version:
+    type: string
+    default: "3.6.3"
+    description: "What version ofmaven should be used?"
+steps:
+  - run:
+      environment:
+        DRY_RUN: <<parameters.dry_run>>
+        DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+      name: Maven Release
+      command: <<include(scripts/mvn_release.sh)>>

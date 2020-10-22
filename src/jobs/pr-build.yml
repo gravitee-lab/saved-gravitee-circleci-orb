@@ -1,0 +1,9 @@
+description: >
+  Runs `mvn verify` on Pull Requests.
+
+executor: cicdmachine
+
+steps:
+  - checkout
+  - secrethub/install
+  - mvn_verify

@@ -1,0 +1,14 @@
+description: >
+    This command runs the maven clean verify goals, as pre-flight checks for the Gravitee Component
+
+parameters:
+  maven_version:
+    type: string
+    default: "3.6.3"
+    description: "What version ofmaven should be used?"
+steps:
+  - run:
+      environment:
+        DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+      name: Maven Verify
+      command: <<include(scripts/mvn_verify.sh)>>

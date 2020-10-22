@@ -1,0 +1,14 @@
+description: >
+    This command runs the maven commands to build the Gravitee Component
+
+parameters:
+  maven_version:
+    type: string
+    default: "3.6.3"
+    description: "What version ofmaven should be used?"
+steps:
+  - run:
+      environment:
+        DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+      name: Maven Build
+      command: <<include(scripts/mvn_build.sh)>>

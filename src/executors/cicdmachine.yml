@@ -1,0 +1,32 @@
+description: >
+  This is a sample executor using Machine executor.
+
+machine:
+  image: '<<parameters.os_name>>-<<parameters.os_version>>:<<parameters.os_patch>>'
+  resource_class: '<<parameters.machine_size>>'
+
+parameters:
+  os_name:
+    default: 'ubuntu'
+    description: >
+      Pick a specific os version image variant:
+      https://hub.docker.com/r/cimg/node/tags
+    type: string
+  os_version:
+    default: '1604'
+    description: >
+      Pick a specific os version (major+minor) number image variant:
+      https://hub.docker.com/r/cimg/node/tags
+    type: string
+  os_patch:
+    default: '201903-01'
+    description: >
+      Pick a specific os patch version number image variant:
+      https://hub.docker.com/r/cimg/node/tags
+    type: string
+  machine_size:
+    default: 'medium'
+    description: >
+      Pick a specific machine size:
+      https://hub.docker.com/r/cimg/node/tags
+    type: string
