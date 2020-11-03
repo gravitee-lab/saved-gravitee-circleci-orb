@@ -12,10 +12,17 @@ usage:
       type: boolean
       default: true
       description: "Run in dry run mode?"
+    secrethub_org:
+      type: string
+      default: "your-secrethuborg"
+      description: "SecretHub Org to use to fetch CI CD secrets ?"
+    secrethub_repo:
+      type: string
+      default: "your-secrethubrepo"
+      description: "SecretHub Repo to use to fetch CI CD secrets ?"
 
   orbs:
-    # secrethub: secrethub/cli@1.0.0
-    gravitee: gravitee-io/gravitee@1.0.0
+    gravitee: gravitee-io/gravitee@1.0
 
   workflows:
     version: 2.1
@@ -23,15 +30,15 @@ usage:
       when:
         equal: [ pr_build, << pipeline.parameters.gio_action >> ]
       jobs:
-        # Job defined from the [gravitee-io/gravitee@1.0.0] Circle CI Orb
         - gravitee/pr-build:
             context: cicd-orchestrator
     release:
       when:
         equal: [ release, << pipeline.parameters.gio_action >> ]
       jobs:
-        # Job defined from the [gravitee-io/gravitee@1.0.0] Circle CI Orb
         - gravitee/release:
             context: cicd-orchestrator
             dry_run: << pipeline.parameters.dry_run >>
             # maven_version: 3.6.3
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>

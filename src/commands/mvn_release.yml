@@ -9,11 +9,23 @@ parameters:
   maven_version:
     type: string
     default: "3.6.3"
-    description: "What version ofmaven should be used?"
+    description: "What version of maven should be used?"
+  secrethub_org:
+    type: string
+    default: $SECRETHUB_ORG
+    description: "The name of the Secrethub Org from which Secrets have to be fetched. Its value defaults to the [SECRETHUB_ORG] env variable if set in the Circle CI context"
+  secrethub_repo:
+    type: string
+    default: $SECRETHUB_REPO
+    description: "The name of the Secrethub Repo from which Secrets have to be fetched. Its value defaults to the [SECRETHUB_REPO] env variable if set in the Circle CI context"
 steps:
   - run:
       environment:
         DRY_RUN: <<parameters.dry_run>>
         DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+        SECRETHUB_ORG: << parameters.secrethub_org >>
+        SECRETHUB_REPO: << parameters.secrethub_repo >>
+        # SECRETHUB_ORG: $SECRETHUB_ORG
+        # SECRETHUB_REPO: $SECRETHUB_REPO
       name: Maven Release
       command: <<include(scripts/mvn_release.sh)>>

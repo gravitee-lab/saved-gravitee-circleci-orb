@@ -12,6 +12,14 @@ parameters:
     type: string
     default: "3.6.3"
     description: "What version of maven should be used?"
+  secrethub_org:
+    type: string
+    default: $SECRETHUB_ORG
+    description: "The name of the Secrethub Org from which Secrets have to be fetched. Its value defaults to the [SECRETHUB_ORG] env variable if set in the Circle CI context"
+  secrethub_repo:
+    type: string
+    default: $SECRETHUB_REPO
+    description: "The name of the Secrethub Repo from which Secrets have to be fetched. Its value defaults to the [SECRETHUB_REPO] env variable if set in the Circle CI context"
 steps:
   - checkout
   - secrethub/install
@@ -20,3 +28,5 @@ steps:
   - mvn_release:
       dry_run: << parameters.dry_run >>
       maven_version: << parameters.maven_version >>
+      secrethub_org: << parameters.secrethub_org >>
+      secrethub_repo: << parameters.secrethub_repo >>
