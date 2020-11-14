@@ -1,5 +1,5 @@
 description: >
-    This command runs the maven commands to release the Java Gravitee Component
+    This command runs the git and maven commands to git release a Java Gravitee Component which has already been maven released by the `mvn_release` Orb Command
 
 parameters:
   dry_run:
@@ -30,7 +30,5 @@ steps:
         MAVEN_PROFILE_ID: <<parameters.maven_profile_id>>
         SECRETHUB_ORG: << parameters.secrethub_org >>
         SECRETHUB_REPO: << parameters.secrethub_repo >>
-        # SECRETHUB_ORG: $SECRETHUB_ORG
-        # SECRETHUB_REPO: $SECRETHUB_REPO
-      name: Maven Release
-      command: <<include(scripts/release/mvn_release.sh)>>
+      name: Git Release
+      command: <<include(scripts/release/git_release.sh)>>

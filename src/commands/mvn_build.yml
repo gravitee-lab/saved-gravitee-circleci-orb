@@ -2,13 +2,13 @@ description: >
     This command runs the maven commands to build the Gravitee Component
 
 parameters:
-  maven_version:
+  maven_container_image_tag:
     type: string
-    default: "3.6.3"
-    description: "What version ofmaven should be used?"
+    default: "stable-latest"
+    description: "What version of the maven container image should be used? (example : '3.6.3-openjdk-11')"
 steps:
   - run:
       environment:
-        DESIRED_MAVEN_VERSION: <<parameters.maven_version>>
+        MAVEN_CONTAINER_IMAGE_TAG: <<parameters.maven_container_image_tag>>
       name: Maven Build
       command: <<include(scripts/mvn_build.sh)>>
