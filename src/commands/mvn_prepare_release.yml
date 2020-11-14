@@ -30,7 +30,5 @@ steps:
         MAVEN_PROFILE_ID: <<parameters.maven_profile_id>>
         SECRETHUB_ORG: << parameters.secrethub_org >>
         SECRETHUB_REPO: << parameters.secrethub_repo >>
-        # SECRETHUB_ORG: $SECRETHUB_ORG
-        # SECRETHUB_REPO: $SECRETHUB_REPO
-      name: Maven Release
-      command: <<include(scripts/release/mvn_release.sh)>>
+      name: Maven Prepare Release
+      command: <<include(scripts/release/mvn_prepare_release.sh)>>

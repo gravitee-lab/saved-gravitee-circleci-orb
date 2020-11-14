@@ -8,10 +8,14 @@ parameters:
     type: boolean
     default: true
     description: "Run in dry run mode?"
-  maven_version:
+  maven_container_image_tag:
     type: string
-    default: "3.6.3"
-    description: "What version of maven should be used?"
+    default: "stable-latest"
+    description: "What version of the maven container image should be used? (example : '3.6.3-openjdk-11')"
+  maven_profile_id:
+    type: string
+    default: "gravitee-dry-run"
+    description: "What is the maven ID of the maven profile to use ?"
   secrethub_org:
     type: string
     default: $SECRETHUB_ORG
@@ -23,10 +27,30 @@ parameters:
 steps:
   - checkout
   - secrethub/install
+  - docker/install-docker-compose
   # - mvn_verify
   # - mvn_build
+  - mvn_prepare_release:
+      dry_run: << parameters.dry_run >>
+      maven_container_image_tag: << parameters.maven_container_image_tag >>
+      maven_profile_id: <<parameters.maven_profile_id>>
+      secrethub_org: << parameters.secrethub_org >>
+      secrethub_repo: << parameters.secrethub_repo >>
+  - mvn_test_release:
+      dry_run: << parameters.dry_run >>
+      maven_container_image_tag: << parameters.maven_container_image_tag >>
+      maven_profile_id: <<parameters.maven_profile_id>>
+      secrethub_org: << parameters.secrethub_org >>
+      secrethub_repo: << parameters.secrethub_repo >>
   - mvn_release:
       dry_run: << parameters.dry_run >>
-      maven_version: << parameters.maven_version >>
+      maven_container_image_tag: << parameters.maven_container_image_tag >>
+      maven_profile_id: <<parameters.maven_profile_id>>
+      secrethub_org: << parameters.secrethub_org >>
+      secrethub_repo: << parameters.secrethub_repo >>
+  - git_release:
+      dry_run: << parameters.dry_run >>
+      maven_container_image_tag: << parameters.maven_container_image_tag >>
+      maven_profile_id: <<parameters.maven_profile_id>>
       secrethub_org: << parameters.secrethub_org >>
       secrethub_repo: << parameters.secrethub_repo >>

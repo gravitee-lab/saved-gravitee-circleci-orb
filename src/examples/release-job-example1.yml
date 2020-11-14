@@ -1,0 +1,54 @@
+description: >
+  This example demonstrates how to use the "`release`" `Orb` Job, in a Gravitee.io Software Developement repo's Pipeline, without any additional explicit Job.
+
+usage:
+  version: 2.1
+  parameters:
+    gio_action:
+      type: enum
+      enum: [release, pr_build]
+      default: pr_build
+    dry_run:
+      type: boolean
+      default: true
+      description: "Run in dry run mode ?"
+    maven_container_image_tag:
+      type: string
+      default: "stable-latest"
+      description: "What version of the maven container image should be used? (example : '3.6.3-openjdk-11')"
+    maven_profile_id:
+      type: string
+      default: "gravitee-dry-run"
+      description: "Maven ID of the Maven profile to use ?"
+    secrethub_org:
+      type: string
+      default: "gravitee-io"
+      description: "SecretHub Org to use to fetch secrets ?"
+    secrethub_repo:
+      type: string
+      default: "cicd"
+      description: "SecretHub Repo to use to fetch secrets ?"
+
+  orbs:
+    gravitee: gravitee-io/gravitee@1.0
+
+  workflows:
+    version: 2.1
+    pull_requests:
+      when:
+        equal: [ pr_build, << pipeline.parameters.gio_action >> ]
+      jobs:
+        # Job defined from the [gravitee-io/gravitee@0.0.1] Circle CI Orb
+        - gravitee/pr-build:
+            context: cicd-orchestrator
+    release:
+      when:
+        equal: [ release, << pipeline.parameters.gio_action >> ]
+      jobs:
+        - gravitee/release:
+            context: cicd-orchestrator
+            dry_run: << pipeline.parameters.dry_run >>
+            # maven_container_image_tag: 3.6.3-openjdk-11
+            maven_profile_id: << pipeline.parameters.maven_profile_id >>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
