@@ -231,6 +231,53 @@ fi;
 echo " [--------------------------------------------------------------------------------] "
 echo "   CHECKING LINUX USER OUTSIDE MAVEN CONTAINER : whoami=[$(whoami)] id=[$(id)]"
 echo " [--------------------------------------------------------------------------------] "
+
+# ---
+# PATCH 1.0.3 => Update dependencies BEFORE ANY OTHER MAVEN COMMAND, SO THAT
+# THE OTHER MAVEN COMMAND WON'T FAIL BECAUSE OF A MISSING -SNAPSHOT DEPENENCY
+# NOT PRESENT IN PRIVATE ARTIFACTORY
+# ---
+echo "# ---"
+echo "# PATCH 1.0.3 => Update dependencies BEFORE ANY OTHER MAVEN COMMAND, SO THAT"
+echo "# THE OTHER MAVEN COMMAND WON'T FAIL BECAUSE OF A MISSING -SNAPSHOT DEPENDENCY"
+echo "# NOT PRESENT IN PRIVATE ARTIFACTORY"
+echo "# ---"
+echo "# ---"
+echo "# NOW  CALCULATE THE MAVEN PROJECT VERISON WITH THE MAVEN EXEC PLUGIN WON'T FAIL BECAUSE OF A "
+echo "# MISSING -SNAPSHOT DEPENDENCY IN ARTIFACTORY REFERENTIAL "
+echo "# ---"
+# the command to update dependencies
+cat <<EOF>>./.circleci/mvn.script2.sh
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+export MVN_EXIT_CODE=\$?
+echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false] maven command is [\${MVN_EXIT_CODE}] "
+exit \${MVN_EXIT_CODE}
+EOF
+
+chmod +x ./.circleci/mvn.script2.sh
+
+runMavenShellScript ./.circleci/mvn.script2.sh
+# --- Can't calculate the maven project version before updating dependencies => patch 1.0.3
+# If The maven project version, ends with '.0', then
+# this is a maintainance release
+# if [ "${MVN_PRJ_VERSION_PATCH}" == "0" ]; then
+  # yes it is a maintainance version
+  # runMavenShellScript ./.circleci/mvn.script2.sh
+# else
+  # no it is not a maintainance version
+  # runMavenShellScript ./.circleci/mvn.script2.sh
+# fi;
+
+
+
+# ---
+# NOW  CALCULATE THE MAVEN PROJECT VERISON WITH THE MAVEN EXEC PLUGIN WON'T FAIL BECAUSE OF A
+# MISSING -SNAPSHOT DEPENDENCY IN ARTIFACTORY REFERENTIAL
+# ---
+echo "# ---"
+echo "# NOW  CALCULATE THE MAVEN PROJECT VERISON WITH THE MAVEN EXEC PLUGIN WON'T FAIL BECAUSE OF A "
+echo "# MISSING -SNAPSHOT DEPENDENCY IN ARTIFACTORY REFERENTIAL "
+echo "# ---"
 # --- model is [mvn_release_trim_snapshot.sh]
 cat <<EOF>>./.circleci/mvn.script.sh
 #!/bin/bash
@@ -277,27 +324,6 @@ echo "MVN_PRJ_VERSION=[${MVN_PRJ_VERSION}]"
 echo "MVN_PRJ_VERSION_PATCH=[${MVN_PRJ_VERSION_PATCH}]"
 
 
-# ---
-# the command to update dependencies
-cat <<EOF>>./.circleci/mvn.script2.sh
-mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
-export MVN_EXIT_CODE=\$?
-echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false] maven command is [\${MVN_EXIT_CODE}] "
-exit \${MVN_EXIT_CODE}
-EOF
-
-chmod +x ./.circleci/mvn.script2.sh
-
-# ---
-# If The maven project version, ends with '.0', then
-# this is a maintainance release
-if [ "${MVN_PRJ_VERSION_PATCH}" == "0" ]; then
-  # yes it is a maintainance version
-  runMavenShellScript ./.circleci/mvn.script2.sh
-else
-  # no it is not a maintainance version
-  runMavenShellScript ./.circleci/mvn.script2.sh
-fi;
 
 
 echo " [--------------------------------------------------------------------------------] "
