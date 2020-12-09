@@ -121,7 +121,7 @@ Info() {
   echo "   Running [$0] in dry run Mode ? [${DRY_RUN}] "
   echo "   Running [$0] with Secret Hub Org name [${SECRETHUB_ORG}] "
   echo "   Running [$0] with Secret Hub Repo name [${SECRETHUB_REPO}] "
-  echo "   Running [$0] with Dry Run maven profile of ID [${MAVEN_PROFILE_ID}] "
+  echo "   Running [$0] with maven profile of ID [${MAVEN_PROFILE_ID}] "
   echo "   Running [$0] with OCI IMAGE IMAGE_TAG_LABEL=[${IMAGE_TAG_LABEL}]"
   echo "   Running [$0] with OCI IMAGE GH_ORG_LABEL=[${GH_ORG_LABEL}]"
   echo "   Running [$0] with OCI IMAGE NON_ROOT_USER_NAME_LABEL=[${NON_ROOT_USER_NAME_LABEL}]"
@@ -289,12 +289,40 @@ if ! [ "\${MVN_EXIT_CODE}" == "0" ]; then
 fi;
 EOF
 
+export GPG_TTY=$(tty)
 cat <<EOF>>./.circleci/mvn.non-dry-run.script.sh
 #!/bin/bash
 ${GPG_SCRIPT_SNIPPET}
-mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P gravitee-release clean deploy
+export GPG_TTY=$(tty)
+echo "# ----------------------------------------------------------------"
+echo " ERROR GPG , let's check if the [~/.gnupg/] folder exists : "
+echo "# ----------------------------------------------------------------"
+if [ -d ~/.gnupg/ ]; then
+  echo " the [~/.gnupg/] folder exists,YES "
+else
+  echo " the [~/.gnupg/] folder DOES NOT exist "
+fi;
+mkdir -p ~/.gnupg/
+touch ~/.gnupg/gpg.conf
+echo 'no-tty' > ~/.gnupg/gpg.conf
+echo "# ----------------------------------------------------------------"
+echo " ERROR GPG , let's see the content of the [~/.gnupg/gpg.conf] : "
+echo "# ----------------------------------------------------------------"
+cat ~/.gnupg/gpg.conf
+echo "# ----------------------------------------------------------------"
+echo " Now SED the [~/.gnupg/gpg.conf] : "
+echo "# ----------------------------------------------------------------"
+sed -i "s~#no-tty~no-tty~g" ~/.gnupg/gpg.conf
+echo "# ----------------------------------------------------------------"
+echo " AFTER SED content of the [~/.gnupg/gpg.conf] : "
+echo "# ----------------------------------------------------------------"
+cat ~/.gnupg/gpg.conf
+echo "# ----------------------------------------------------------------"
+
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy
 export MVN_EXIT_CODE=\$?
-echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P gravitee-release clean deploy -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
+echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
 exit \${MVN_EXIT_CODE}
 EOF
 

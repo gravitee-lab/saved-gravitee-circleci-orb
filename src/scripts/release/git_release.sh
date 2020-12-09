@@ -134,7 +134,7 @@ Info() {
   echo "   Running [$0] in dry run Mode ? [${DRY_RUN}] "
   echo "   Running [$0] with Secret Hub Org name [${SECRETHUB_ORG}] "
   echo "   Running [$0] with Secret Hub Repo name [${SECRETHUB_REPO}] "
-  echo "   Running [$0] with Dry Run maven profile of ID [${MAVEN_PROFILE_ID}] "
+  echo "   Running [$0] with maven profile of ID [${MAVEN_PROFILE_ID}] "
   echo "   Running [$0] with OCI IMAGE TAG [${IMAGE_TAG_LABEL}]"
   echo "   Running [$0] with OCI IMAGE GH_ORG =[${GH_ORG_LABEL}]"
   echo "   Running [$0] with OCI IMAGE NON_ROOT_USER_NAME =[${NON_ROOT_USER_NAME_LABEL}]"
