@@ -100,7 +100,19 @@ rm ./.circleci/gpg.script.snippet.sh
 # +++ The settings.xml +++ #
 # +++ ++++++++++++++++ +++ #
 # First, we need the [settings.xml] file containing the maven profiles secrets
-secrethub read --out-file ./settings.xml "${SECRETHUB_ORG}/${SECRETHUB_REPO}/graviteebot/infra/maven/dry-run/artifactory/settings.xml"
+if [ "${DRY_RUN}" == "0" ]; then
+  echo "# --->>> NO IT IS NOT A DRY RUN"
+  secrethub read --out-file ./settings.xml "${SECRETHUB_ORG}/${SECRETHUB_REPO}/graviteebot/infra/maven/dry-run/artifactory/settings.non.dry.run.xml"
+else
+  echo "# --->>> THIS IS A DRY RUN"
+  secrethub read --out-file ./settings.xml "${SECRETHUB_ORG}/${SECRETHUB_REPO}/graviteebot/infra/maven/dry-run/artifactory/settings.xml"
+fi;
+
+echo " [--------------------------------------------------------------------------------] "
+echo " [------  NOW HERE IS THE SETTINGS.XML PULL FROM SECRETHUB : "
+echo " [--------------------------------------------------------------------------------] "
+cat ./settings.xml
+echo " [--------------------------------------------------------------------------------] "
 
 
 Usage() {
