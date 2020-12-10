@@ -315,6 +315,8 @@ secrethub read --out-file ${LOCAL_SSH_PRVIKEY} "${SECRETHUB_ORG}/${SECRETHUB_REP
 chmod 700 "${HOME}/.ssh.gravitee.io/"
 chmod 644 "${LOCAL_SSH_PUBKEY}"
 chmod 600 "${LOCAL_SSH_PRVIKEY}"
+ssh-add -D
+ssh-add "${LOCAL_SSH_PRVIKEY}"
 
 echo "[$0 - setupSSHGithubUser] [GIT_USER_NAME=[${GIT_USER_NAME}]] "
 echo "[$0 - setupSSHGithubUser] [GIT_USER_EMAIL=[${GIT_USER_EMAIL}]] "
