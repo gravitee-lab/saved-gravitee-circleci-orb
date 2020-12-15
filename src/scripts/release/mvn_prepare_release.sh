@@ -258,11 +258,21 @@ echo "# ---"
 echo "# NOW  CALCULATE THE MAVEN PROJECT VERISON WITH THE MAVEN EXEC PLUGIN WON'T FAIL BECAUSE OF A "
 echo "# MISSING -SNAPSHOT DEPENDENCY IN ARTIFACTORY REFERENTIAL "
 echo "# ---"
-# the command to update dependencies
+# the command to update dependencies [ I tested adding the [-D maven.version.rules.serverId=artifactory-gravitee-releases], but this doe snot cahnge anything in the issue with updating dependencies versions (removing the -SNAPSHOT suffix)]
+# * the goal `versions:update-properties` was used instead of the `versions:use-releases` goal
+# * because dependencies versions are configured via java properties in most `pom.xml` files
 cat <<EOF>>./.circleci/mvn.script2.sh
-mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dmaven.version.rules.serverId=artifactory-gravitee-releases -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dmaven.version.rules.serverId=artifactory-gravitee-releases -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
 export MVN_EXIT_CODE=\$?
 echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false] maven command is [\${MVN_EXIT_CODE}] "
+echo "#-------- JUST AFTER MVN UPDATE:PROPERTIES"
+if [ -d /home/${NON_ROOT_USER_NAME_LABEL}/.m2/repository/io/gravitee/repository/gravitee-repository-test/ ]; then
+  echo " the [gravitee-repository-test] is present in the local [.m2] "
+  ls -allh /home/${NON_ROOT_USER_NAME_LABEL}/.m2/repository/io/gravitee/repository/gravitee-repository-test/3.4.1/
+else
+  echo " the [gravitee-repository-test] is NOT present in the local [.m2] "
+fi;
 exit \${MVN_EXIT_CODE}
 EOF
 
