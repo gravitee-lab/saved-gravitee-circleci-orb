@@ -282,16 +282,33 @@ export GIT_COMMIT=$(git rev-parse HEAD)
 cat <<EOF>>./.circleci/mvn.dry-run.script.sh
 #!/bin/bash
 ${GPG_SCRIPT_SNIPPET}
+
 # ---
-# enforce-no-snapshots
+# [mvn clean install] (before  enforcer:enforce , or build will
+# fail for multi-module maven projects, with dependencies between modules)
 # ---
-mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install -DskipTests=true
 export MVN_EXIT_CODE=\$?
-echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce] maven command is [\${MVN_EXIT_CODE}] "
+echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install] maven command is [\${MVN_EXIT_CODE}] "
 if ! [ "\${MVN_EXIT_CODE}" == "0" ]; then
-  echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce] maven command is [\${MVN_EXIT_CODE}], so not zero "
+  echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install] maven command is [\${MVN_EXIT_CODE}], so not zero "
   exit \${MVN_EXIT_CODE}
 fi;
+
+# ---
+# [enforce-no-snapshots]
+# ---
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce -DskipTests=true
+export MVN_EXIT_CODE=\$?
+echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
+if ! [ "\${MVN_EXIT_CODE}" == "0" ]; then
+  echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -P ${MAVEN_PROFILE_ID} enforcer:enforce -DskipTests=true] maven command is [\${MVN_EXIT_CODE}], so not zero "
+  exit \${MVN_EXIT_CODE}
+fi;
+
+# ---
+# [mvn clean deploy]
+# ---
 mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true
 export MVN_EXIT_CODE=\$?
 echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
@@ -299,6 +316,10 @@ if ! [ "\${MVN_EXIT_CODE}" == "0" ]; then
   echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true] maven command is [\${MVN_EXIT_CODE}], so not zero "
   exit \${MVN_EXIT_CODE}
 fi;
+
+
+
+
 EOF
 
 export GPG_TTY=$(tty)
@@ -331,8 +352,23 @@ echo "# ----------------------------------------------------------------"
 cat ~/.gnupg/gpg.conf
 echo "# ----------------------------------------------------------------"
 
-# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy
-mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy
+# ---
+# [mvn clean install] (before  enforcer:enforce , or build will
+# fail for multi-module maven projects, with dependencies between modules)
+# ---
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install -DskipTests=true
+export MVN_EXIT_CODE=\$?
+echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
+if ! [ "\${MVN_EXIT_CODE}" == "0" ]; then
+  echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean install -DskipTests=true] maven command is [\${MVN_EXIT_CODE}], so not zero "
+  exit \${MVN_EXIT_CODE}
+fi;
+
+# ---
+# [mvn clean deploy]
+# ---
+mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true
+# mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true
 export MVN_EXIT_CODE=\$?
 echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U -P ${MAVEN_PROFILE_ID} clean deploy -DskipTests=true] maven command is [\${MVN_EXIT_CODE}] "
 exit \${MVN_EXIT_CODE}

@@ -262,8 +262,12 @@ echo "# ---"
 # * the goal `versions:update-properties` was used instead of the `versions:use-releases` goal
 # * because dependencies versions are configured via java properties in most `pom.xml` files
 cat <<EOF>>./.circleci/mvn.script2.sh
-# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dmaven.version.rules.serverId=artifactory-gravitee-releases -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml dependency:purge-local-repository clean
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml dependency:purge-local-repository clean install
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U dependency:purge-local-repository versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
 mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dmaven.version.rules.serverId=artifactory-gravitee-releases -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
+# mvn -X -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:use-releases -Dincludes=io.gravitee.*:* -DfailIfNotReplaced=true -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false
 export MVN_EXIT_CODE=\$?
 echo "[\$0] The exit code of the [mvn -Duser.home=/home/${NON_ROOT_USER_NAME_LABEL}/ -s ./settings.xml -B -U versions:update-properties -Dincludes=io.gravitee.*:* -DallowMajorUpdates=false -DallowMinorUpdates=false -DallowIncrementalUpdates=true -DgenerateBackupPoms=false] maven command is [\${MVN_EXIT_CODE}] "
 echo "#-------- JUST AFTER MVN UPDATE:PROPERTIES"
