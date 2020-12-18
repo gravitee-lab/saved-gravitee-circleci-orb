@@ -14,6 +14,7 @@ This Orb assumes you will manage all the secrets of your CICD System in one sing
   * in every repo where we use this Orb, we have Circle CI Pipeline parameters `SECRETHUB_ORG` and `SECRETHUB_REPO` to dynamically set those two parameters.
   * this makes Pipelines easily testable
 
+This `README` certainly is not a perfect documentation, but if you want to use this Orb, it should be helpful, to some extent.
 
 ## CICD Secrets taxonomy trees
 
