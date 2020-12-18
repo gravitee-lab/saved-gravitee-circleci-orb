@@ -1,30 +1,26 @@
 description: >
-  This example demonstrates how to use the 4 release process `Orb` Commands, in a Gravitee.io Software Developement repo's Pipeline :
+  This example demonstrates how to use the 4 release process `Orb` Commands, out of the Release Job context, in a Software Developement repo's Pipeline :
     * "`mvn_prepare_release`"
     * "`mvn_test_release`"
     * "`mvn_release`"
     * "`git_release`"
 
 usage:
-  version: 2.1
+  version: '2.1'
 
   parameters:
     gio_action:
       type: enum
-      enum: [release, pr_build]
-      default: pr_build
+      enum: [release, blank]
+      default: blank
     dry_run:
       type: boolean
       default: true
-      description: "Run in dry run mode ?"
-    maven_container_image_tag:
-      type: string
-      default: "stable-latest"
-      description: "What version of the maven container image should be used? (example : '3.6.3-openjdk-11')"
+      description: "Run in dry run mode?"
     maven_profile_id:
       type: string
-      default: "gravitee-dry-run"
-      description: "Maven ID of the Maven profile to use ?"
+      default: "gio-release"
+      description: "Maven ID of the Maven profile to use for a dry run ?"
     secrethub_org:
       type: string
       default: "gravitee-lab"
@@ -35,116 +31,120 @@ usage:
       description: "SecretHub Repo to use to fetch secrets ?"
 
   orbs:
-    secrethub: secrethub/cli@1.0.0
     docker: circleci/docker@1.5
+    # gravitee: 'gravitee-io/gravitee@dev:1.0.2'
     gravitee: gravitee-io/gravitee@dev:1.0.2
-
+    secrethub: secrethub/cli@1.0.0
   jobs:
-    mvn_deploy_gravitee_parent:
-      machine:
-        resource_class: medium
-        image: 'ubuntu-1604:201903-01'    # recommended linux image - includes Ubuntu 16.04, docker 18.09.3, docker-compose 1.23.1
-        # docker_layer_caching: true    # default - false # requires a Circle CI plan that includes [Docker layer caching feature]
+    empty_job:
+      docker:
+       - image: alpine
+      resource_class: small
+      working_directory: /mnt/ramdisk
       steps:
-        # I do not checkout the source code of
-        # the [clever-cloud-artifactory-deployment-prototype] git repo, but the
-        # https://github.com/gravitee-lab/gravitee-parent repo
-        # -
-        # - checkout
         - run:
-            name: "Redefine Gravitee Parent POM in reference private maven repository"
-            command: |
-                      git clone https://github.com/gravitee-lab/gravitee-parent ./
-                      git checkout 17.x
+            name: "This is a dummy empty job (isn't it ?)"
+            command: echo "No task is executed."
+    release_job:
+      machine:
+        image: 'ubuntu-1604:201903-01'
+        resource_class: medium
+      steps:
+        - checkout
         - secrethub/install
         - docker/install-docker-compose
         - gravitee/mvn_prepare_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
         - gravitee/mvn_test_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
         - gravitee/mvn_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
         - gravitee/git_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
-
-    mvn_deploy_gravitee_component:
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: << pipeline.parameters.maven_container_image_tag >>
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
+    dry_release_job:
       machine:
+        image: 'ubuntu-1604:201903-01'
         resource_class: medium
-        image: 'ubuntu-1604:201903-01'    # recommended linux image - includes Ubuntu 16.04, docker 18.09.3, docker-compose 1.23.1
-        # docker_layer_caching: true    # default - false # requires a Circle CI plan that includes [Docker layer caching feature]
       steps:
-        # I do not checkout the source code of
-        # the [clever-cloud-artifactory-deployment-prototype] git repo, but the
-        # https://github.com/gravitee-lab/gravitee-common repo
-        # - checkout
-        - run:
-            name: "Checking out source code of the Gravitee Component, on the deisred version : last commit on the [1.18.x] git branch"
-            command: |
-                      git clone https://github.com/gravitee-lab/gravitee-common ./
-                      git checkout 1.18.x
+        - checkout
         - secrethub/install
         - docker/install-docker-compose
         - gravitee/mvn_prepare_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
         - gravitee/mvn_test_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
         - gravitee/mvn_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
-        - gravitee/git_release:
-            dry_run: << parameters.dry_run >>
-            maven_container_image_tag: << parameters.maven_container_image_tag >>
-            maven_profile_id: <<parameters.maven_profile_id>>
-            secrethub_org: << parameters.secrethub_org >>
-            secrethub_repo: << parameters.secrethub_repo >>
-
+            dry_run: << pipeline.parameters.dry_run >>
+            maven_container_image_tag: stable-latest
+            maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            secrethub_org: << pipeline.parameters.secrethub_org >>
+            secrethub_repo: << pipeline.parameters.secrethub_repo >>
+        # - gravitee/git_release:
+            # dry_run: << pipeline.parameters.dry_run >>
+            # maven_container_image_tag: << pipeline.parameters.maven_container_image_tag >>
+            # maven_profile_id: << pipeline.parameters.maven_profile_id>>
+            # secrethub_org: << pipeline.parameters.secrethub_org >>
+            # secrethub_repo: << pipeline.parameters.secrethub_repo >>
   workflows:
-    version: 2.1
-    maven_deploy:
-      # triggers:
-        # - schedule:
-            # Every sunday at midnight UTC
-            # cron: "0 0 * * *"
-            # not supported by Circle CI
-            # cron: "*/5 * * * *"
-            # cron: '* * * * *'
-            # Every hour UTC
-            # cron: "0 * * * *"
-            # filters:
-              # branches:
-                # only:
-                  # - master
+    # Blank process invoked when the test dev repo has a commit event, or pull request event
+    blank:
+      when:
+        equal: [ blank, << pipeline.parameters.gio_action >> ]
       jobs:
-        - mvn_deploy_gravitee_parent:
+        - empty_job:
             context: cicd-orchestrator
-        - mvn_deploy_gravitee_component:
+    release_process:
+      when:
+        and:
+          - equal: [ release, << pipeline.parameters.gio_action >> ]
+          - not: << pipeline.parameters.dry_run >>
+      jobs:
+        - release_job:
             context: cicd-orchestrator
-            requires:
-              - mvn_deploy_gravitee_parent
+            filters:
+              branches:
+                only:
+                  - 4.0.x
+                  - 4.1.x
+                  - 4.2.x
+                  - 4.3.x
+    dry_release_process:
+      when:
+        and:
+          - equal: [ release, << pipeline.parameters.gio_action >> ]
+          - << pipeline.parameters.dry_run >>
+      jobs:
+        - dry_release_job:
+            context: cicd-orchestrator
+            filters:
+              branches:
+                only:
+                  - 4.0.x
+                  - 4.1.x
+                  - 4.2.x
+                  - 4.3.x
+    version: 2.1
